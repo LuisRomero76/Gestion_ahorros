@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "917388909881",
+    "project_id": "gestion-ahorros",
+    "storage_bucket": "gestion-ahorros.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:917388909881:android:0535c67d007f767837dce8",
+        "android_client_info": {
+          "package_name": "com.example.gestion_ahorros"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA3KTPY2D435KmPgy0x1Uczq7PY9PiarM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
