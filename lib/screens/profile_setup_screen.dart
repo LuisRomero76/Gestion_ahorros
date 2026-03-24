@@ -56,20 +56,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     super.dispose();
   }
 
-  String _extractNameFromEmail(String email) {
-    // Extraer la parte antes del @
-    final username = email.split('@').first;
-
-    // Reemplazar puntos, guiones y guiones bajos por espacios
-    String name = username.replaceAll(RegExp(r'[._-]'), ' ');
-
-    // Capitalizar cada palabra
-    return name.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
-  }
-
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 

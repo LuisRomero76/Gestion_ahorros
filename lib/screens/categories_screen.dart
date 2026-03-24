@@ -33,9 +33,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Eliminar Categoría'),
+        title: const Text('Eliminar Motivo'),
         content: Text(
-          '¿Estás seguro de eliminar "$name"?\n\nEsto también eliminará todos los registros asociados a esta categoría.',
+          '¿Estás seguro de eliminar "$name"?\n\nEsto también eliminará todos los registros asociados a esta Motivo.',
         ),
         actions: [
           TextButton(
@@ -54,7 +54,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 await appProvider.deleteCategory(id);
                 scaffoldMessenger.showSnackBar(
                   const SnackBar(
-                    content: Text('Categoría eliminada'),
+                    content: Text('Motivo eliminada'),
                     backgroundColor: AppTheme.accentColor,
                   ),
                 );
@@ -85,7 +85,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Gestión de Categorías'),
+        title: const Text('Gestión de Motivos'),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: AppTheme.primaryGradient,
@@ -104,7 +104,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No hay categorías',
+                    'No hay motivos registrados',
                     style: TextStyle(
                       fontSize: 16,
                       color: AppTheme.textSecondary.withAlpha(150),
@@ -112,7 +112,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Agrega una categoría nueva',
+                    'Agrega un motivo nuevo para empezar a organizar tus ahorros',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppTheme.textSecondary,
@@ -195,7 +195,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         onPressed: () => _showAddCategoryDialog(),
         backgroundColor: AppTheme.primaryColor,
         icon: const Icon(Icons.add),
-        label: const Text('Nueva Categoría'),
+        label: const Text('Nuevo Motivo'),
       ),
     );
   }
@@ -261,7 +261,7 @@ class _CategoryDialogState extends State<CategoryDialog> {
         scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(
-              isNewCategory ? 'Categoría creada' : 'Categoría actualizada',
+              isNewCategory ? 'Motivo creado' : 'Motivo actualizado',
             ),
             backgroundColor: AppTheme.accentColor,
           ),
@@ -284,7 +284,7 @@ class _CategoryDialogState extends State<CategoryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.category == null ? 'Nueva Categoría' : 'Editar Categoría'),
+      title: Text(widget.category == null ? 'Nuevo Motivo' : 'Editar Motivo'),
       content: Form(
         key: _formKey,
         child: Column(

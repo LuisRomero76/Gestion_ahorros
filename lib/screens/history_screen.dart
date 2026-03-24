@@ -67,7 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen>
 
     for (var record in records) {
       total += record.amount;
-      final category = record.categoryName ?? 'Sin categoría';
+      final category = record.categoryName ?? 'Sin motivos';
       byCategory[category] = (byCategory[category] ?? 0.0) + record.amount;
     }
 
@@ -292,7 +292,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                     const SizedBox(height: 12),
                     // Filtro por categoría
                     Text(
-                      'Por categoría',
+                      'Por motivo',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -526,7 +526,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                                 ),
                                 DataColumn(
                                   label: Text(
-                                    'Categoría',
+                                    'Motivo',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
@@ -594,28 +594,6 @@ class _HistoryScreenState extends State<HistoryScreen>
                                     DataCell(
                                       Row(
                                         children: [
-                                          Container(
-                                            width: 32,
-                                            height: 32,
-                                            decoration: BoxDecoration(
-                                              gradient: AppTheme.primaryGradient,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                record.userName
-                                                        ?.substring(0, 1)
-                                                        .toUpperCase() ??
-                                                    '?',
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
                                           const SizedBox(width: 8),
                                           Text(
                                             record.userName ?? 'Desconocido',
@@ -628,46 +606,32 @@ class _HistoryScreenState extends State<HistoryScreen>
                                       ),
                                     ),
                                     DataCell(
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.secondaryColor
-                                              .withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          record.categoryName ?? 'Sin categoría',
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppTheme.secondaryColor,
+                                      Row(
+                                        children: [
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            record.categoryName ?? 'Sin motivos',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppTheme.secondaryColor
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ),
                                     ),
                                     DataCell(
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          gradient: AppTheme.primaryGradient,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          'Bs ${NumberFormat('#,##0.00').format(record.amount)}',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                                      Row(
+                                        children: [
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Bs ${NumberFormat('#,##0.00').format(record.amount)}',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ),
                                     ),
                                     DataCell(

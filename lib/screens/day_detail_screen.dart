@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/record.dart';
 import '../providers/app_provider.dart';
 import '../themes/app_theme.dart';
+import 'add_record_screen.dart';
 
 class DayDetailScreen extends StatefulWidget {
   final DateTime selectedDate;
@@ -392,6 +393,25 @@ class _DayDetailScreenState extends State<DayDetailScreen>
           const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          // ignore: unused_local_variable
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => AddRecordScreen(
+                selectedDate: widget.selectedDate,
+              ),
+            ),
+          );
+          // Recargar registros al volver
+          if (mounted) {
+            await _loadDayRecords();
+          }
+        },
+        backgroundColor: AppTheme.primaryColor,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Agregar'),
+      ),
     );
   }
 
@@ -452,7 +472,7 @@ class _DayDetailScreenState extends State<DayDetailScreen>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          record.categoryName ?? 'Sin categoría',
+                          record.categoryName ?? 'Sin motivos',
                           style: TextStyle(
                             fontSize: 14,
                             color: AppTheme.textSecondary.withAlpha(180),

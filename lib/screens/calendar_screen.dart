@@ -19,6 +19,7 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen>
     with SingleTickerProviderStateMixin {
+  // ignore: unused_field
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -175,7 +176,7 @@ class _CalendarScreenState extends State<CalendarScreen>
                         children: [
                           Icon(Icons.category_outlined, size: 18),
                           SizedBox(width: 12),
-                          Text('Gestionar Categorías'),
+                          Text('Gestionar Motivos'),
                         ],
                       ),
                     ),
@@ -461,7 +462,7 @@ class _CalendarScreenState extends State<CalendarScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Resumen por Categoría',
+                        'Resumen por Motivo',
                         style: TextStyle(
                           fontSize: 15, // Reducido de 16 a 15
                           fontWeight: FontWeight.w600,

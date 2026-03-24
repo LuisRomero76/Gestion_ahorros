@@ -6,7 +6,12 @@ import '../providers/app_provider.dart';
 import '../themes/app_theme.dart';
 
 class AddRecordScreen extends StatefulWidget {
-  const AddRecordScreen({super.key});
+  final DateTime? selectedDate;
+
+  const AddRecordScreen({
+    super.key,
+    this.selectedDate,
+  });
 
   @override
   State<AddRecordScreen> createState() => _AddRecordScreenState();
@@ -19,6 +24,7 @@ class _AddRecordScreenState extends State<AddRecordScreen>
   double? _amount;
   bool _isLoading = false;
   int _currentStep = 0;
+  late DateTime _recordDate;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -26,6 +32,8 @@ class _AddRecordScreenState extends State<AddRecordScreen>
   @override
   void initState() {
     super.initState();
+    // Usar la fecha seleccionada o la fecha actual
+    _recordDate = widget.selectedDate ?? DateTime.now();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -36,7 +44,7 @@ class _AddRecordScreenState extends State<AddRecordScreen>
     );
     _animationController.forward();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) { // Verificar que el widget sigue activo
+      if (mounted) {
         context.read<AppProvider>().loadInitialData();
       }
     });
@@ -184,7 +192,7 @@ class _AddRecordScreenState extends State<AddRecordScreen>
                             const SizedBox(height: 2),
                             Text(
                               DateFormat('EEEE, d \'de\' MMMM', 'es')
-                                  .format(DateTime.now()),
+                                  .format(_recordDate),
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -407,7 +415,7 @@ class _AddRecordScreenState extends State<AddRecordScreen>
                         ),
                         const SizedBox(height: 12),
                         const Text(
-                          '¿Qué categoría fue?',
+                          '¿Qué motivo fue?',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -649,10 +657,21 @@ class _AddRecordScreenState extends State<AddRecordScreen>
     });
 
     try {
+      final now = DateTime.now();
+      // Combinar fecha seleccionada con hora actual
+      final recordDateTime = DateTime(
+        _recordDate.year,
+        _recordDate.month,
+        _recordDate.day,
+        now.hour,
+        now.minute,
+        now.second,
+      );
+
       final record = Record(
         userId: _selectedUserId!,
         categoryId: _selectedCategoryId!,
-        date: DateTime.now(),
+        date: recordDateTime,
         amount: _amount ?? 0.0,
       );
 
