@@ -32,7 +32,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
   void _deletePerson(String id, String name) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.surfaceColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -54,7 +54,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
               'Cancelar',
               style: TextStyle(color: AppTheme.textSecondary),
@@ -62,27 +62,29 @@ class _PeopleScreenState extends State<PeopleScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await context.read<AppProvider>().deleteUser(id);
+              // Guardar referencias ANTES de cerrar el diálogo
+              final appProvider = context.read<AppProvider>();
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Persona eliminada'),
-                      backgroundColor: AppTheme.accentColor,
-                    ),
-                  );
-                }
+              // Cerrar el diálogo
+              Navigator.pop(dialogContext);
+
+              try {
+                await appProvider.deleteUser(id);
+
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Persona eliminada correctamente'),
+                    backgroundColor: AppTheme.accentColor,
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error al eliminar: $e'),
-                      backgroundColor: AppTheme.errorColor,
-                    ),
-                  );
-                }
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Error al eliminar: $e'),
+                    backgroundColor: AppTheme.errorColor,
+                  ),
+                );
               }
             },
             child: const Text(
@@ -262,12 +264,17 @@ class _PersonDialogState extends State<PersonDialog> {
 
     setState(() => _isLoading = true);
 
+    // Guardar referencias ANTES de cualquier operación asíncrona
+    final appProvider = context.read<AppProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     try {
-      await context.read<AppProvider>().addUser(_nameController.text.trim());
+      await appProvider.addUser(_nameController.text.trim());
 
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        navigator.pop();
+        scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text('Persona agregada'),
             backgroundColor: AppTheme.accentColor,
@@ -275,14 +282,12 @@ class _PersonDialogState extends State<PersonDialog> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

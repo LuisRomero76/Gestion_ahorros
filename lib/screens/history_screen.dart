@@ -17,6 +17,10 @@ class _HistoryScreenState extends State<HistoryScreen>
   String? _selectedUserFilter;
   String? _selectedCategoryFilter;
 
+  // Paginación
+  int _currentPage = 1;
+  int _itemsPerPage = 10;
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -33,7 +37,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
     _animationController.forward();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) { // Verificar que el widget sigue activo
+      if (mounted) {
         context.read<AppProvider>().loadInitialData();
       }
     });
@@ -49,10 +53,28 @@ class _HistoryScreenState extends State<HistoryScreen>
     setState(() {
       _selectedUserFilter = null;
       _selectedCategoryFilter = null;
+      _currentPage = 1;
     });
     context.read<AppProvider>().clearFilters();
     _animationController.reset();
     _animationController.forward();
+  }
+
+  // Calcular totales y desglose basado en registros filtrados
+  Map<String, dynamic> _calculateSummary(List<Record> records) {
+    double total = 0.0;
+    Map<String, double> byCategory = {};
+
+    for (var record in records) {
+      total += record.amount;
+      final category = record.categoryName ?? 'Sin categoría';
+      byCategory[category] = (byCategory[category] ?? 0.0) + record.amount;
+    }
+
+    return {
+      'total': total,
+      'byCategory': byCategory,
+    };
   }
 
   @override
@@ -61,14 +83,27 @@ class _HistoryScreenState extends State<HistoryScreen>
     final users = appProvider.users;
     final categories = appProvider.categories;
     final records = appProvider.records;
-    final totalSavings = appProvider.totalSavings;
-    final savingsByCategory = appProvider.savingsByCategory;
+
+    // Calcular resumen basado en registros filtrados
+    final summary = _calculateSummary(records);
+    final totalFiltered = summary['total'] as double;
+    final byCategory = summary['byCategory'] as Map<String, double>;
+
+    // Paginación
+    final totalRecords = records.length;
+    final totalPages = (totalRecords / _itemsPerPage).ceil();
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = (startIndex + _itemsPerPage).clamp(0, totalRecords);
+    final paginatedRecords = records.sublist(
+      startIndex.clamp(0, totalRecords),
+      endIndex,
+    );
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
         slivers: [
-          // Header - Estilo minimalista
+          // Header
           SliverAppBar(
             expandedHeight: 120,
             floating: false,
@@ -119,7 +154,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             ),
           ),
 
-          // Filtros
+          // Filtros (mantener posición actual)
           SliverToBoxAdapter(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -212,6 +247,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                             onTap: () {
                               setState(() {
                                 _selectedUserFilter = null;
+                                _currentPage = 1;
                               });
                               if (_selectedCategoryFilter == null) {
                                 appProvider.clearFilters();
@@ -233,6 +269,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                                       _selectedUserFilter == user.id
                                           ? null
                                           : user.id;
+                                  _currentPage = 1;
                                 });
                                 if (_selectedUserFilter == null) {
                                   if (_selectedCategoryFilter == null) {
@@ -273,6 +310,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                             onTap: () {
                               setState(() {
                                 _selectedCategoryFilter = null;
+                                _currentPage = 1;
                               });
                               if (_selectedUserFilter == null) {
                                 appProvider.clearFilters();
@@ -294,6 +332,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                                       _selectedCategoryFilter == category.id
                                           ? null
                                           : category.id;
+                                  _currentPage = 1;
                                 });
                                 if (_selectedCategoryFilter == null) {
                                   if (_selectedUserFilter == null) {
@@ -319,7 +358,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             ),
           ),
 
-          // Lista de registros
+          // Tabla de registros
           records.isEmpty
               ? SliverFillRemaining(
                   child: FadeTransition(
@@ -370,150 +409,532 @@ class _HistoryScreenState extends State<HistoryScreen>
                     ),
                   ),
                 )
-              : SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final record = records[index];
-                        return FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.3),
-                              end: Offset.zero,
-                            ).animate(CurvedAnimation(
-                              parent: _animationController,
-                              curve: Interval(
-                                index * 0.05,
-                                1.0,
-                                curve: Curves.easeOut,
+              : SliverToBoxAdapter(
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.dividerColor,
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          // Info de paginación superior
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.backgroundColor,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
                               ),
-                            )),
-                            child: _buildRecordCard(record),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Mostrando ${startIndex + 1}-$endIndex de $totalRecords registros',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Por página:',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primaryColor
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: DropdownButton<int>(
+                                        value: _itemsPerPage,
+                                        underline: const SizedBox(),
+                                        isDense: true,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppTheme.primaryColor,
+                                        ),
+                                        items: [5, 10, 20, 50]
+                                            .map((value) => DropdownMenuItem(
+                                                  value: value,
+                                                  child: Text('$value'),
+                                                ))
+                                            .toList(),
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(() {
+                                              _itemsPerPage = value;
+                                              _currentPage = 1;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      },
-                      childCount: records.length,
+
+                          // Tabla
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              headingRowColor: MaterialStateProperty.all(
+                                AppTheme.primaryColor.withOpacity(0.05),
+                              ),
+                              columnSpacing: 16,
+                              horizontalMargin: 16,
+                              columns: const [
+                                DataColumn(
+                                  label: Text(
+                                    'Fecha',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Persona',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Categoría',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Monto',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  numeric: true,
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Agregado por',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                DataColumn(
+                                  label: Text(
+                                    'Acciones',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              rows: paginatedRecords.map((record) {
+                                return DataRow(
+                                  cells: [
+                                    DataCell(
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            DateFormat('dd/MM/yyyy')
+                                                .format(record.date),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            DateFormat('HH:mm')
+                                                .format(record.date),
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: AppTheme.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 32,
+                                            height: 32,
+                                            decoration: BoxDecoration(
+                                              gradient: AppTheme.primaryGradient,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                record.userName
+                                                        ?.substring(0, 1)
+                                                        .toUpperCase() ??
+                                                    '?',
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            record.userName ?? 'Desconocido',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.secondaryColor
+                                              .withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          record.categoryName ?? 'Sin categoría',
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.secondaryColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: AppTheme.primaryGradient,
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          'Bs ${NumberFormat('#,##0.00').format(record.amount)}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Text(
+                                        record.addedByName ?? '-',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: AppTheme.accentColor,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      IconButton(
+                                        icon: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.errorColor
+                                                .withAlpha(20),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.delete_outline,
+                                            color: AppTheme.errorColor,
+                                            size: 16,
+                                          ),
+                                        ),
+                                        onPressed: () =>
+                                            _showDeleteConfirmation(record),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
+
+                          // Controles de paginación
+                          if (totalPages > 1)
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.backgroundColor,
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(12),
+                                  bottomRight: Radius.circular(12),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.chevron_left,
+                                      size: 20,
+                                    ),
+                                    onPressed: _currentPage > 1
+                                        ? () {
+                                            setState(() {
+                                              _currentPage--;
+                                            });
+                                          }
+                                        : null,
+                                    color: AppTheme.primaryColor,
+                                    disabledColor: AppTheme.textSecondary
+                                        .withOpacity(0.3),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ...List.generate(
+                                    totalPages > 5 ? 5 : totalPages,
+                                    (index) {
+                                      int pageNumber;
+                                      if (totalPages <= 5) {
+                                        pageNumber = index + 1;
+                                      } else if (_currentPage <= 3) {
+                                        pageNumber = index + 1;
+                                      } else if (_currentPage >=
+                                          totalPages - 2) {
+                                        pageNumber = totalPages - 4 + index;
+                                      } else {
+                                        pageNumber = _currentPage - 2 + index;
+                                      }
+
+                                      return GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _currentPage = pageNumber;
+                                          });
+                                        },
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(
+                                              horizontal: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            gradient: _currentPage == pageNumber
+                                                ? AppTheme.primaryGradient
+                                                : null,
+                                            color: _currentPage == pageNumber
+                                                ? null
+                                                : AppTheme.backgroundColor,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: _currentPage == pageNumber
+                                                  ? Colors.transparent
+                                                  : AppTheme.dividerColor,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '$pageNumber',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: _currentPage == pageNumber
+                                                  ? Colors.white
+                                                  : AppTheme.textPrimary,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.chevron_right,
+                                      size: 20,
+                                    ),
+                                    onPressed: _currentPage < totalPages
+                                        ? () {
+                                            setState(() {
+                                              _currentPage++;
+                                            });
+                                          }
+                                        : null,
+                                    color: AppTheme.primaryColor,
+                                    disabledColor: AppTheme.textSecondary
+                                        .withOpacity(0.3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
 
-          // Resumen inferior
-          SliverToBoxAdapter(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Container(
-                margin: const EdgeInsets.all(12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withAlpha(40),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.pie_chart_outline_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Resumen',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    // Total general
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(20),
-                        borderRadius: BorderRadius.circular(16),
+          // Resumen (calculado basado en registros filtrados)
+          if (records.isNotEmpty)
+            SliverToBoxAdapter(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withAlpha(40),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
                         children: [
-                          const Text(
-                            'Total General',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.white,
-                            ),
+                          Icon(
+                            Icons.pie_chart_outline_rounded,
+                            color: Colors.white,
+                            size: 18,
                           ),
+                          SizedBox(width: 6),
                           Text(
-                            'Bs ${NumberFormat('#,##0.00').format(totalSavings)}',
-                            style: const TextStyle(
-                              fontSize: 18,
+                            'Resumen (Filtrado)',
+                            style: TextStyle(
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Divider(color: Colors.white24),
-                    const SizedBox(height: 12),
-                    // Desglose por categoría
-                    ...savingsByCategory.entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                      const SizedBox(height: 14),
+                      // Total filtrado
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(20),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  entry.key,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
+                            const Text(
+                              'Total',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white,
+                              ),
                             ),
                             Text(
-                              'Bs ${NumberFormat('#,##0.00').format(entry.value)}',
+                              'Bs ${NumberFormat('#,##0.00').format(totalFiltered)}',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
                           ],
                         ),
-                      );
-                    }),
-                  ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(color: Colors.white24),
+                      const SizedBox(height: 12),
+                      // Desglose por categoría
+                      ...byCategory.entries.map((entry) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    entry.key,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                'Bs ${NumberFormat('#,##0.00').format(entry.value)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
 
           const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
         ],
@@ -521,135 +942,14 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
   }
 
-  Widget _buildRecordCard(Record record) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.cardShadow,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Material(
-          color: Colors.transparent,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: const BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.all(Radius.circular(14)),
-                  ),
-                  child: Center(
-                    child: Text(
-                      record.userName?.substring(0, 1) ?? '?',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        record.userName ?? 'Desconocido',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        record.categoryName ?? 'Sin categoría',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary.withAlpha(180),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        DateFormat('dd/MM/yyyy • HH:mm').format(record.date),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppTheme.textSecondary.withAlpha(150),
-                        ),
-                      ),
-                      if (record.addedByName != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Agregado por: ${record.addedByName}',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: AppTheme.accentColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: const BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                  child: Text(
-                    'Bs ${NumberFormat('#,##0.00').format(record.amount)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.errorColor.withAlpha(20),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.delete_outline,
-                      color: AppTheme.errorColor,
-                      size: 18,
-                    ),
-                  ),
-                  onPressed: () => _showDeleteConfirmation(record),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _showDeleteConfirmation(Record record) async {
+    // Guardar referencias ANTES de mostrar el diálogo
+    final appProvider = context.read<AppProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -665,14 +965,14 @@ class _HistoryScreenState extends State<HistoryScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text(
               'Cancelar',
               style: TextStyle(color: AppTheme.textSecondary),
             ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.errorColor,
               shape: RoundedRectangleBorder(
@@ -686,11 +986,11 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
 
     if (confirmed == true && mounted) {
-      await context.read<AppProvider>().deleteRecord(record.id!);
+      await appProvider.deleteRecord(record.id!);
       _animationController.reset();
       _animationController.forward();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text('Registro eliminado'),
             backgroundColor: AppTheme.primaryColor,

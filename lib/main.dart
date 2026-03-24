@@ -6,6 +6,7 @@ import 'firebase_options.dart';
 import 'providers/app_provider.dart';
 import 'themes/app_theme.dart';
 import 'widgets/auth_wrapper.dart';
+import 'services/notification_service.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -16,6 +17,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Inicializar servicio de notificaciones
+  await NotificationService.instance.initialize();
 
   await initializeDateFormatting('es', null);
 
@@ -46,7 +50,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => AppProvider(),
       child: MaterialApp(
-        title: 'Ahorros en Pareja',
+        title: 'Ahorros App',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: const AuthWrapper(),

@@ -7,6 +7,11 @@ export 'models/record.dart';
 // Providers
 export 'providers/app_provider.dart';
 
+// Services
+export 'services/auth_service.dart';
+export 'services/firestore_service.dart';
+export 'services/notification_service.dart';
+
 // Themes
 export 'themes/app_theme.dart';
 

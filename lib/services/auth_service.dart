@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'notification_service.dart';
 
 class AuthService {
   static final AuthService instance = AuthService._init();
@@ -45,6 +46,13 @@ class AuthService {
 
   // Cerrar sesión
   Future<void> signOut() async {
+    // Limpiar el token FCM antes de cerrar sesión
+    try {
+      await NotificationService.instance.clearDeviceToken();
+    } catch (e) {
+      print('Error al limpiar token FCM: $e');
+    }
+
     await _auth.signOut();
   }
 

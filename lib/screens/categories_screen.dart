@@ -32,38 +32,39 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   void _deleteCategory(String id, String name) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Eliminar Categoría'),
         content: Text(
           '¿Estás seguro de eliminar "$name"?\n\nEsto también eliminará todos los registros asociados a esta categoría.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              // Guardar referencias ANTES de cerrar el diálogo
+              final appProvider = context.read<AppProvider>();
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+              Navigator.pop(dialogContext);
+
               try {
-                await context.read<AppProvider>().deleteCategory(id);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Categoría eliminada'),
-                      backgroundColor: AppTheme.accentColor,
-                    ),
-                  );
-                }
+                await appProvider.deleteCategory(id);
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Categoría eliminada'),
+                    backgroundColor: AppTheme.accentColor,
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error al eliminar: $e'),
-                      backgroundColor: AppTheme.errorColor,
-                    ),
-                  );
-                }
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Error al eliminar: $e'),
+                    backgroundColor: AppTheme.errorColor,
+                  ),
+                );
               }
             },
             child: const Text(
@@ -236,6 +237,12 @@ class _CategoryDialogState extends State<CategoryDialog> {
 
     setState(() => _isLoading = true);
 
+    // Guardar referencias ANTES de operaciones asíncronas
+    final appProvider = context.read<AppProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final isNewCategory = widget.category == null;
+
     try {
       final category = Category(
         id: widget.category?.id,
@@ -243,36 +250,30 @@ class _CategoryDialogState extends State<CategoryDialog> {
         defaultAmount: double.parse(_amountController.text),
       );
 
-      final appProvider = context.read<AppProvider>();
-
-      if (widget.category == null) {
+      if (isNewCategory) {
         await appProvider.addCategory(category);
       } else {
         await appProvider.updateCategory(widget.category!.id!, category);
       }
 
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        navigator.pop();
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(
-              widget.category == null
-                  ? 'Categoría creada'
-                  : 'Categoría actualizada',
+              isNewCategory ? 'Categoría creada' : 'Categoría actualizada',
             ),
             backgroundColor: AppTheme.accentColor,
           ),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

@@ -73,7 +73,24 @@ class FirestoreService {
       throw Exception('No tienes permisos para eliminar este perfil');
     }
 
-    await _firestore.collection('profiles').doc(profileId).delete();
+    // Eliminar todos los registros asociados a este usuario
+    final recordsSnapshot = await _firestore
+        .collection('records')
+        .where('userId', isEqualTo: profileId)
+        .get();
+
+    // Usar batch para eliminar todo en una sola transacción
+    final batch = _firestore.batch();
+
+    // Eliminar todos los registros del usuario
+    for (var doc in recordsSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // Eliminar el perfil del usuario
+    batch.delete(_firestore.collection('profiles').doc(profileId));
+
+    await batch.commit();
   }
 
   Future<List<User>> getUsers() async {
@@ -174,10 +191,21 @@ class FirestoreService {
   Future<String> insertRecord(Record record) async {
     if (currentUserId == null) throw Exception('Usuario no autenticado');
 
-    // Agregar información del usuario que crea el registro
+    // Obtener información adicional para Cloud Functions
+    final user = await getUserById(record.userId);
+    final category = await getCategoryById(record.categoryId);
+    final addedByName = await getCurrentUserName();
+
+    // Construir los datos del registro con información adicional
+    // para que Cloud Functions pueda enviar notificaciones
     final recordData = record.toFirestore();
-    recordData['addedBy'] = currentUserId; // Usuario de Firebase Auth que lo agregó
+    recordData['addedBy'] = currentUserId;
     recordData['addedAt'] = FieldValue.serverTimestamp();
+
+    // Información adicional para las notificaciones (Cloud Functions)
+    recordData['userName'] = user?.name ?? 'Usuario';
+    recordData['categoryName'] = category?.name ?? 'Categoría';
+    recordData['addedByName'] = addedByName ?? 'Alguien';
 
     final docRef = await _firestore.collection('records').add(recordData);
 

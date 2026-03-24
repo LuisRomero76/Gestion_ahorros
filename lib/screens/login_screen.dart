@@ -217,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                       // Título
                       Text(
-                        'Ahorros\nen Pareja',
+                        'Ahorros',
                         textAlign: TextAlign.center,
                         style: Theme.of(context)
                             .textTheme

@@ -1,4 +1,6 @@
+# ==============================================
 # Miscellaneous
+# ==============================================
 *.class
 *.log
 *.pyc
@@ -12,34 +14,193 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# ==============================================
+# IntelliJ / Android Studio
+# ==============================================
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# ==============================================
+# VS Code
+# ==============================================
+# Descomenta si quieres ignorar configuraciones de VS Code
+# .vscode/
 
-# Flutter/Dart/Pub related
+# ==============================================
+# Flutter / Dart / Pub
+# ==============================================
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
 /coverage/
 
+# ==============================================
 # Symbolication related
+# ==============================================
 app.*.symbols
 
+# ==============================================
 # Obfuscation related
+# ==============================================
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# ==============================================
+# Android Studio build artifacts
+# ==============================================
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# ==============================================
+# Firebase
+# ==============================================
+# Archivos de configuración local de Firebase
+.firebase/
+
+# Service Account Keys (MUY IMPORTANTE - NUNCA SUBIR)
+**/serviceAccountKey.json
+**/service-account*.json
+**/*-firebase-adminsdk-*.json
+
+# Firebase Hosting cache
+.firebase/
+
+# Firebase Emulator data
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# ==============================================
+# Variables de Entorno
+# ==============================================
+# Archivo real con variables de entorno (si decides usarlo)
+.env
+.env.local
+.env.*.local
+
+# Mantener el ejemplo
+!.env.example
+
+# ==============================================
+# Firebase - Google Services (OPCIONAL)
+# ==============================================
+# IMPORTANTE: Algunos desarrolladores suben estos archivos al repo
+# porque son configuraciones públicas de Firebase.
+# Otros prefieren no subirlos por precaución.
+#
+# Firebase recomienda: ESTÁ BIEN subirlos (son públicos)
+# Pero si prefieres no hacerlo, descomenta las siguientes líneas:
+
+# android/app/google-services.json
+# ios/Runner/GoogleService-Info.plist
+# macos/Runner/GoogleService-Info.plist
+
+# ==============================================
+# Cloud Functions
+# ==============================================
+# Node modules de Cloud Functions
+functions/node_modules/
+functions/.runtimeconfig.json
+functions/lib/
+
+# Logs de funciones
+functions/firebase-debug.log
+functions/firestore-debug.log
+functions/ui-debug.log
+
+# Service account keys para funciones (MUY IMPORTANTE)
+functions/*-service-account*.json
+functions/serviceAccountKey.json
+
+# ==============================================
+# iOS
+# ==============================================
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.sconsign.dblite
+**/ios/**/.tags*
+**/ios/**/.vagrant/
+**/ios/**/DerivedData/
+**/ios/**/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/profile
+**/ios/**/xcuserdata
+**/ios/.generated/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# ==============================================
+# macOS
+# ==============================================
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# ==============================================
+# Windows
+# ==============================================
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+**/windows/flutter/generated_plugins.cmake
+
+# ==============================================
+# Linux
+# ==============================================
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugin_registrant.h
+**/linux/flutter/generated_plugins.cmake
+
+# ==============================================
+# Web
+# ==============================================
+**/web/.firebase/
+
+# ==============================================
+# Claude Code
+# ==============================================
+/.claude
+
+# ==============================================
+# Archivos de Assets temporales
+# ==============================================
+# Ignorar archivos temporales de diseño
+*.sketch
+*.fig
+*.xd
+*.ai
+*.psd
+
+# ==============================================
+# Secrets y Keys (CRÍTICO)
+# ==============================================
+# Cualquier archivo que contenga "secret", "key", "password" en el nombre
+**/*secret*
+**/*private*key*
+**/*password*
+**/*.p12
+**/*.pem
+**/*.key
+
+# Excepciones (archivos que SÍ queremos versionar)
+!**/pubspec.lock
+!**/analysis_options.yaml

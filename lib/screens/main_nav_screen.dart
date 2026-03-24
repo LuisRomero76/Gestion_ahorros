@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../themes/app_theme.dart';
+import '../services/notification_service.dart';
 import 'calendar_screen.dart';
 import 'add_record_screen.dart';
 import 'history_screen.dart';
@@ -41,7 +42,7 @@ class _MainNavScreenState extends State<MainNavScreen>
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 0); // Inicia en Calendario (índice 0)
+    _pageController = PageController(initialPage: 0);
 
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -49,8 +50,11 @@ class _MainNavScreenState extends State<MainNavScreen>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) { // Verificar que el widget sigue activo
+      if (mounted) {
         context.read<AppProvider>().loadInitialData();
+
+        // Obtener y guardar el token FCM para notificaciones push
+        NotificationService.instance.getAndSaveToken();
       }
     });
   }

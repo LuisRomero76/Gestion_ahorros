@@ -57,9 +57,13 @@ class _DayDetailScreenState extends State<DayDetailScreen>
   }
 
   Future<void> _showDeleteConfirmation(Record record) async {
+    // Guardar referencias ANTES de mostrar el diálogo
+    final appProvider = context.read<AppProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -75,14 +79,14 @@ class _DayDetailScreenState extends State<DayDetailScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text(
               'Cancelar',
               style: TextStyle(color: AppTheme.textSecondary),
             ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.errorColor,
               shape: RoundedRectangleBorder(
@@ -96,10 +100,10 @@ class _DayDetailScreenState extends State<DayDetailScreen>
     );
 
     if (confirmed == true && mounted) {
-      await context.read<AppProvider>().deleteRecord(record.id!);
+      await appProvider.deleteRecord(record.id!);
       await _loadDayRecords();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text('Registro eliminado'),
             backgroundColor: AppTheme.primaryColor,

@@ -129,17 +129,9 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> deleteUser(String userId) async {
-    // Eliminar todos los registros del usuario
-    final userRecords = await _firestore.getRecordsByUser(userId);
-    for (var record in userRecords) {
-      if (record.id != null) {
-        await _firestore.deleteRecord(record.id!);
-      }
-    }
-
-    // Eliminar el perfil del usuario
+    // El servicio de Firestore ya maneja la eliminación en cascada
     await _firestore.deleteUserProfile(userId);
     await loadUsers();
-    await loadRecords(); // Recargar registros
+    await loadRecords(); // Recargar registros después de eliminar el usuario
   }
 }
