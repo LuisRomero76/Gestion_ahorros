@@ -71,6 +71,14 @@ class AppProvider extends ChangeNotifier {
     await loadRecords();
   }
 
+  // Agregar múltiples registros en una sola operación de UI
+  Future<void> addRecords(List<Record> records) async {
+    for (final record in records) {
+      await _firestore.insertRecord(record);
+    }
+    await loadRecords();
+  }
+
   // Eliminar un registro
   Future<void> deleteRecord(String id) async {
     await _firestore.deleteRecord(id);

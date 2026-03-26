@@ -172,7 +172,7 @@ class FirestoreService {
     // Eliminar todos los registros asociados a esta categoría
     final recordsSnapshot = await _firestore
         .collection('records')
-        .where('categoryId', isEqualTo: id)
+        .where('categoryIds', arrayContains: id)
         .get();
 
     final batch = _firestore.batch();
@@ -193,8 +193,16 @@ class FirestoreService {
 
     // Obtener información adicional para Cloud Functions
     final user = await getUserById(record.userId);
-    final category = await getCategoryById(record.categoryId);
     final addedByName = await getCurrentUserName();
+
+    // Obtener nombres de categorías
+    final categoryNames = <String>[];
+    for (final categoryId in record.categoryIds) {
+      final category = await getCategoryById(categoryId);
+      if (category != null) {
+        categoryNames.add(category.name);
+      }
+    }
 
     // Construir los datos del registro con información adicional
     // para que Cloud Functions pueda enviar notificaciones
@@ -204,7 +212,7 @@ class FirestoreService {
 
     // Información adicional para las notificaciones (Cloud Functions)
     recordData['userName'] = user?.name ?? 'Usuario';
-    recordData['categoryName'] = category?.name ?? 'Categoría';
+    recordData['categoryName'] = categoryNames.join(', ');
     recordData['addedByName'] = addedByName ?? 'Alguien';
 
     final docRef = await _firestore.collection('records').add(recordData);
@@ -243,13 +251,16 @@ class FirestoreService {
   }
 
   Future<List<Record>> getRecordsByCategory(String categoryId) async {
-    final snapshot = await _firestore
-        .collection('records')
-        .where('categoryId', isEqualTo: categoryId)
-        .get();
+    // Obtener todos los registros y filtrar los que contienen la categoría
+    // Firestore no soporta consultas "array contains" directamente sin índice compuesto
+    final snapshot = await _firestore.collection('records').get();
 
-    final records = await _enrichRecords(snapshot.docs);
-    // Ordenar en el cliente para evitar necesidad de índices compuestos
+    final allRecords = await _enrichRecords(snapshot.docs);
+    final records = allRecords
+        .where((record) => record.categoryIds.contains(categoryId))
+        .toList();
+
+    // Ordenar en el cliente
     records.sort((a, b) => b.date.compareTo(a.date));
     return records;
   }
@@ -307,11 +318,25 @@ class FirestoreService {
 
     for (var doc in recordsSnapshot.docs) {
       final data = doc.data();
-      final categoryId = data['categoryId'] as String;
+      final categoryIdsData = data['categoryIds'];
       final amount = (data['amount'] as num).toDouble();
-      final categoryName = categoryMap[categoryId] ?? 'Desconocido';
 
-      result[categoryName] = (result[categoryName] ?? 0.0) + amount;
+      List<String> categoryIds = [];
+      if (categoryIdsData is List) {
+        categoryIds = categoryIdsData.cast<String>();
+      } else if (categoryIdsData is String) {
+        // Compatibilidad con datos antiguos
+        categoryIds = [categoryIdsData];
+      }
+
+      // Distribuir el monto entre las categorías seleccionadas
+      if (categoryIds.isNotEmpty) {
+        final amountPerCategory = amount / categoryIds.length;
+        for (final categoryId in categoryIds) {
+          final categoryName = categoryMap[categoryId] ?? 'Desconocido';
+          result[categoryName] = (result[categoryName] ?? 0.0) + amountPerCategory;
+        }
+      }
     }
 
     return result;
@@ -352,7 +377,13 @@ class FirestoreService {
     return docs.map((doc) {
       final record = Record.fromFirestore(doc);
       record.userName = userMap[record.userId];
-      record.categoryName = categoryMap[record.categoryId];
+
+      // Construir nombre de categorías concatenando las seleccionadas
+      final categoryNames = record.categoryIds
+          .map((id) => categoryMap[id])
+          .where((name) => name != null)
+          .join(', ');
+      record.categoryName = categoryNames.isEmpty ? 'Categorías' : categoryNames;
 
       // Enriquecer información de quién agregó el registro
       if (record.addedBy != null) {

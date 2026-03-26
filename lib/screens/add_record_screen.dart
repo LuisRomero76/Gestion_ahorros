@@ -20,7 +20,7 @@ class AddRecordScreen extends StatefulWidget {
 class _AddRecordScreenState extends State<AddRecordScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedUserId;
-  String? _selectedCategoryId;
+  final List<String> _selectedCategoryIds = []; // Ahora es una lista para selección múltiple
   double? _amount;
   bool _isLoading = false;
   int _currentStep = 0;
@@ -78,12 +78,19 @@ class _AddRecordScreenState extends State<AddRecordScreen>
     final users = appProvider.users;
     final categories = appProvider.categories;
 
-    if (_selectedCategoryId != null) {
-      final category = categories.firstWhere(
-        (c) => c.id == _selectedCategoryId,
-        orElse: () => categories.first,
-      );
-      _amount = category.defaultAmount;
+    // Calcular el monto total sumando todas las categorías seleccionadas
+    if (_selectedCategoryIds.isNotEmpty) {
+      double totalAmount = 0.0;
+      for (final categoryId in _selectedCategoryIds) {
+        final category = categories.firstWhere(
+          (c) => c.id == categoryId,
+          orElse: () => categories.first,
+        );
+        totalAmount += category.defaultAmount;
+      }
+      _amount = totalAmount;
+    } else {
+      _amount = null;
     }
 
     return Scaffold(
@@ -415,16 +422,24 @@ class _AddRecordScreenState extends State<AddRecordScreen>
                         ),
                         const SizedBox(height: 12),
                         const Text(
-                          '¿Qué motivo fue?',
+                          '¿Qué motivos fueron?',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.textPrimary,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Selecciona uno o más motivos',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         ...categories.map((category) {
-                          final isSelected = _selectedCategoryId == category.id;
+                          final isSelected = _selectedCategoryIds.contains(category.id);
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOutCubic,
@@ -435,8 +450,11 @@ class _AddRecordScreenState extends State<AddRecordScreen>
                               child: InkWell(
                                 onTap: () {
                                   setState(() {
-                                    _selectedCategoryId = category.id;
-                                    _amount = category.defaultAmount;
+                                    if (isSelected) {
+                                      _selectedCategoryIds.remove(category.id);
+                                    } else {
+                                      _selectedCategoryIds.add(category.id!);
+                                    }
                                   });
                                 },
                                 borderRadius: BorderRadius.circular(16),
@@ -541,15 +559,31 @@ class _AddRecordScreenState extends State<AddRecordScreen>
                                           ],
                                         ),
                                       ),
-                                      AnimatedOpacity(
-                                        duration:
-                                            const Duration(milliseconds: 200),
-                                        opacity: isSelected ? 1.0 : 0.0,
-                                        child: const Icon(
-                                          Icons.check_circle,
-                                          color: Colors.white,
-                                          size: 22,
+                                      // Checkbox para indicar selección múltiple
+                                      AnimatedContainer(
+                                        duration: const Duration(milliseconds: 200),
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? Colors.white
+                                                : AppTheme.textSecondary
+                                                    .withAlpha(100),
+                                            width: 2,
+                                          ),
                                         ),
+                                        child: isSelected
+                                            ? const Icon(
+                                                Icons.check,
+                                                color: AppTheme.secondaryColor,
+                                                size: 16,
+                                              )
+                                            : null,
                                       ),
                                     ],
                                   ),
@@ -562,7 +596,7 @@ class _AddRecordScreenState extends State<AddRecordScreen>
                         const SizedBox(height: 20),
 
                         // Resumen y botón guardar
-                        if (_selectedCategoryId != null)
+                        if (_selectedCategoryIds.isNotEmpty)
                           FadeTransition(
                             opacity: _fadeAnimation,
                             child: Container(
@@ -650,13 +684,15 @@ class _AddRecordScreenState extends State<AddRecordScreen>
   }
 
   Future<void> _saveRecord(BuildContext context) async {
-    if (_selectedUserId == null || _selectedCategoryId == null) return;
+    if (_selectedUserId == null || _selectedCategoryIds.isEmpty) return;
 
     setState(() {
       _isLoading = true;
     });
 
     try {
+      final appProvider = context.read<AppProvider>();
+      final categories = appProvider.categories;
       final now = DateTime.now();
       // Combinar fecha seleccionada con hora actual
       final recordDateTime = DateTime(
@@ -668,14 +704,22 @@ class _AddRecordScreenState extends State<AddRecordScreen>
         now.second,
       );
 
-      final record = Record(
-        userId: _selectedUserId!,
-        categoryId: _selectedCategoryId!,
-        date: recordDateTime,
-        amount: _amount ?? 0.0,
-      );
+      // Crear un registro individual por cada categoría seleccionada
+      final records = _selectedCategoryIds.map((categoryId) {
+        final category = categories.firstWhere(
+          (c) => c.id == categoryId,
+          orElse: () => throw Exception('Categoría no encontrada'),
+        );
 
-      await context.read<AppProvider>().addRecord(record);
+        return Record(
+          userId: _selectedUserId!,
+          categoryIds: [categoryId],
+          date: recordDateTime,
+          amount: category.defaultAmount,
+        );
+      }).toList();
+
+      await appProvider.addRecords(records);
 
       if (mounted) {
         // Mostrar animación de éxito
@@ -693,7 +737,7 @@ class _AddRecordScreenState extends State<AddRecordScreen>
           setState(() {
             _currentStep = 0;
             _selectedUserId = null;
-            _selectedCategoryId = null;
+            _selectedCategoryIds.clear();
             _amount = null;
           });
         }

@@ -3,13 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Record {
   final String? id;
   final String userId;
-  final String categoryId;
+  final List<String> categoryIds; // Ahora soporta múltiples categorías
   final DateTime date;
   final double amount;
 
   // Campos adicionales para mostrar en UI
   String? userName;
-  String? categoryName;
+  String? categoryName; // Nombres de categorías concatenados
 
   // Campos para rastrear quién agregó el registro
   String? addedBy; // UID del usuario de Firebase Auth que agregó el registro
@@ -19,7 +19,7 @@ class Record {
   Record({
     this.id,
     required this.userId,
-    required this.categoryId,
+    required this.categoryIds,
     required this.date,
     required this.amount,
     this.userName,
@@ -32,7 +32,7 @@ class Record {
   Map<String, dynamic> toMap() {
     return {
       'user_id': userId,
-      'category_id': categoryId,
+      'category_ids': categoryIds,
       'date': date.toIso8601String(),
       'amount': amount,
     };
@@ -41,17 +41,26 @@ class Record {
   Map<String, dynamic> toFirestore() {
     return {
       'userId': userId,
-      'categoryId': categoryId,
+      'categoryIds': categoryIds,
       'date': Timestamp.fromDate(date),
       'amount': amount,
     };
   }
 
   factory Record.fromMap(Map<String, dynamic> map, {String? id}) {
+    final categoryIdsData = map['category_ids'] ?? map['categoryIds'];
+    List<String> categoryIds = [];
+    if (categoryIdsData is List) {
+      categoryIds = categoryIdsData.cast<String>();
+    } else if (categoryIdsData is String) {
+      // Compatibilidad con datos antiguos (única categoría)
+      categoryIds = [categoryIdsData];
+    }
+
     return Record(
       id: id,
       userId: (map['user_id'] ?? map['userId']) as String,
-      categoryId: (map['category_id'] ?? map['categoryId']) as String,
+      categoryIds: categoryIds,
       date: map['date'] is Timestamp
           ? (map['date'] as Timestamp).toDate()
           : DateTime.parse(map['date'] as String),
@@ -63,10 +72,21 @@ class Record {
 
   factory Record.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    // Manejar categoryIds como lista o como string individual (compatibilidad)
+    List<String> categoryIds = [];
+    final categoryIdsData = data['categoryIds'];
+    if (categoryIdsData is List) {
+      categoryIds = categoryIdsData.cast<String>();
+    } else if (categoryIdsData is String) {
+      // Compatibilidad con datos antiguos
+      categoryIds = [categoryIdsData];
+    }
+
     return Record(
       id: doc.id,
       userId: data['userId'] as String,
-      categoryId: data['categoryId'] as String,
+      categoryIds: categoryIds,
       date: (data['date'] as Timestamp).toDate(),
       amount: (data['amount'] as num).toDouble(),
       addedBy: data['addedBy'] as String?,
