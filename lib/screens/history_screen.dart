@@ -249,12 +249,10 @@ class _HistoryScreenState extends State<HistoryScreen>
                                 _selectedUserFilter = null;
                                 _currentPage = 1;
                               });
-                              if (_selectedCategoryFilter == null) {
-                                appProvider.clearFilters();
-                              } else {
-                                appProvider
-                                    .filterByCategory(_selectedCategoryFilter!);
-                              }
+                              appProvider.applyFilters(
+                                userId: _selectedUserFilter,
+                                categoryId: _selectedCategoryFilter,
+                              );
                               _animationController.reset();
                               _animationController.forward();
                             },
@@ -271,16 +269,10 @@ class _HistoryScreenState extends State<HistoryScreen>
                                           : user.id;
                                   _currentPage = 1;
                                 });
-                                if (_selectedUserFilter == null) {
-                                  if (_selectedCategoryFilter == null) {
-                                    appProvider.clearFilters();
-                                  } else {
-                                    appProvider.filterByCategory(
-                                        _selectedCategoryFilter!);
-                                  }
-                                } else {
-                                  appProvider.filterByUser(user.id!);
-                                }
+                                appProvider.applyFilters(
+                                  userId: _selectedUserFilter,
+                                  categoryId: _selectedCategoryFilter,
+                                );
                                 _animationController.reset();
                                 _animationController.forward();
                               },
@@ -312,12 +304,10 @@ class _HistoryScreenState extends State<HistoryScreen>
                                 _selectedCategoryFilter = null;
                                 _currentPage = 1;
                               });
-                              if (_selectedUserFilter == null) {
-                                appProvider.clearFilters();
-                              } else {
-                                appProvider
-                                    .filterByUser(_selectedUserFilter!);
-                              }
+                              appProvider.applyFilters(
+                                userId: _selectedUserFilter,
+                                categoryId: _selectedCategoryFilter,
+                              );
                               _animationController.reset();
                               _animationController.forward();
                             },
@@ -334,16 +324,10 @@ class _HistoryScreenState extends State<HistoryScreen>
                                           : category.id;
                                   _currentPage = 1;
                                 });
-                                if (_selectedCategoryFilter == null) {
-                                  if (_selectedUserFilter == null) {
-                                    appProvider.clearFilters();
-                                  } else {
-                                    appProvider.filterByUser(
-                                        _selectedUserFilter!);
-                                  }
-                                } else {
-                                  appProvider.filterByCategory(category.id!);
-                                }
+                                appProvider.applyFilters(
+                                  userId: _selectedUserFilter,
+                                  categoryId: _selectedCategoryFilter,
+                                );
                                 _animationController.reset();
                                 _animationController.forward();
                               },

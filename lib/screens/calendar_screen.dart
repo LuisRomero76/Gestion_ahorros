@@ -349,7 +349,9 @@ class _CalendarScreenState extends State<CalendarScreen>
                       });
                     },
                     onPageChanged: (focusedDay) {
-                      _focusedDay = focusedDay;
+                      setState(() {
+                        _focusedDay = focusedDay;
+                      });
                     },
                     headerVisible: false,
                     daysOfWeekHeight: 35, // Reducido de 40 a 35

@@ -2,10 +2,19 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regla para colecciones de usuarios
-    match /users/{userId}/{document=**} {
-      // Solo el usuario autenticado puede leer y escribir sus propios datos
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Colección de perfiles - cualquier usuario autenticado puede hacer todo
+    match /profiles/{profileId} {
+      allow read, create, update, delete: if request.auth != null;
+    }
+
+    // Colección de categorías - cualquier usuario autenticado puede hacer todo
+    match /categories/{categoryId} {
+      allow read, create, update, delete: if request.auth != null;
+    }
+
+    // Colección de registros - cualquier usuario autenticado puede hacer todo
+    match /records/{recordId} {
+      allow read, create, update, delete: if request.auth != null;
     }
   }
 }

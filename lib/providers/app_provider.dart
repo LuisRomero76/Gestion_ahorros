@@ -10,9 +10,13 @@ class AppProvider extends ChangeNotifier {
   List<User> _users = [];
   List<Category> _categories = [];
   List<Record> _records = [];
+  List<Record> _allRecords = [];
   double _totalSavings = 0.0;
   Map<String, double> _savingsByCategory = {};
   List<DateTime> _datesWithRecords = [];
+
+  String? _activeUserFilter;
+  String? _activeCategoryFilter;
 
   // Getters
   List<User> get users => _users;
@@ -48,7 +52,8 @@ class AppProvider extends ChangeNotifier {
 
   // Cargar registros
   Future<void> loadRecords() async {
-    _records = await _firestore.getRecords();
+    _allRecords = await _firestore.getRecords();
+    _applyFilters(notify: false);
     await _loadTotals();
     await _loadDatesWithRecords();
     notifyListeners();
@@ -87,19 +92,47 @@ class AppProvider extends ChangeNotifier {
 
   // Filtrar registros por usuario
   Future<void> filterByUser(String userId) async {
-    _records = await _firestore.getRecordsByUser(userId);
-    notifyListeners();
+    _activeUserFilter = userId;
+    _applyFilters();
   }
 
   // Filtrar registros por categoría
   Future<void> filterByCategory(String categoryId) async {
-    _records = await _firestore.getRecordsByCategory(categoryId);
-    notifyListeners();
+    _activeCategoryFilter = categoryId;
+    _applyFilters();
+  }
+
+  // Filtrar registros por usuario y/o categoría
+  Future<void> applyFilters({String? userId, String? categoryId}) async {
+    _activeUserFilter = userId;
+    _activeCategoryFilter = categoryId;
+    _applyFilters();
   }
 
   // Limpiar filtros y mostrar todos
   Future<void> clearFilters() async {
-    await loadRecords();
+    _activeUserFilter = null;
+    _activeCategoryFilter = null;
+    _records = List<Record>.from(_allRecords);
+    notifyListeners();
+  }
+
+  void _applyFilters({bool notify = true}) {
+    final filtered = _allRecords.where((record) {
+      final matchesUser = _activeUserFilter == null
+          ? true
+          : record.userId == _activeUserFilter;
+      final matchesCategory = _activeCategoryFilter == null
+          ? true
+          : record.categoryIds.contains(_activeCategoryFilter);
+      return matchesUser && matchesCategory;
+    }).toList();
+
+    _records = filtered;
+
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   // Verificar si una fecha tiene registros
